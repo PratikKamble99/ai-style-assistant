@@ -1,11 +1,10 @@
 import express, { Request, Response, NextFunction } from 'express';
-import { PrismaClient } from '@prisma/client';
 import { ProductService } from '../services/productService';
 import { createError } from '../middleware/errorHandler';
 import { validate, productSchemas } from '../middleware/validation';
+import { prisma } from '../lib/prisma';
 
 const router = express.Router();
-const prisma = new PrismaClient();
 const productService = new ProductService();
 
 // Search products across platforms
@@ -58,9 +57,8 @@ router.get('/recommendations/:suggestionId', async (req: Request, res: Response,
     }
 
     // Get existing recommendations
-    let recommendations = await prisma.productRecommendation.findMany({
+    let recommendations = await prisma.outfit.findMany({
       where: { suggestionId },
-      orderBy: { createdAt: 'desc' }
     });
 
     // If no recommendations exist, generate them
@@ -69,16 +67,15 @@ router.get('/recommendations/:suggestionId', async (req: Request, res: Response,
       
       // Save recommendations to database
       if (newRecommendations.length > 0) {
-        await prisma.productRecommendation.createMany({
+        await prisma.outfit.createMany({
           data: newRecommendations.map(rec => ({
             suggestionId,
             ...rec
           }))
         });
 
-        recommendations = await prisma.productRecommendation.findMany({
+        recommendations = await prisma.outfit.findMany({
           where: { suggestionId },
-          orderBy: { createdAt: 'desc' }
         });
       }
     }

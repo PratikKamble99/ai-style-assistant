@@ -1,13 +1,14 @@
 import express, { Request, Response, NextFunction } from 'express';
 import bcrypt from 'bcryptjs';
-import { PrismaClient } from '@prisma/client';
 import { generateToken } from '../middleware/auth';
 import { createError } from '../middleware/errorHandler';
 import { validate, authSchemas } from '../middleware/validation';
 import { asyncHandler } from '../middleware/asyncHandler';
+import { prisma } from '../lib/prisma';
+import { AsyncLocalStorage } from 'async_hooks';
+const fetch = require('node-fetch');
 
 const router = express.Router();
-const prisma = new PrismaClient();
 
 // Register
 router.post('/register', validate(authSchemas.register), asyncHandler(async (req: Request, res: Response, next: NextFunction) => {
@@ -70,14 +71,16 @@ router.post('/login', validate(authSchemas.login), asyncHandler(async (req: Requ
       }
     });
 
+    console.log(user, email, password)
+
     if (!user || !user.password) {
-      throw createError('Invalid credentials', 401);
+      throw createError('Invalid credentials', 403);
     }
 
     // Check password
     const isValidPassword = await bcrypt.compare(password, user.password);
     if (!isValidPassword) {
-      throw createError('Invalid credentials', 401);
+      throw createError('Invalid credentials', 403);
     }
 
     // Generate token
@@ -99,17 +102,77 @@ router.post('/login', validate(authSchemas.login), asyncHandler(async (req: Requ
   }
 }));
 
-// Google OAuth (placeholder - implement with passport-google-oauth20)
-router.post('/google', asyncHandler(async (req: Request, res: Response, next: NextFunction) => {
+// Google OAuth
+router.post('/google', validate(authSchemas.googleLogin), asyncHandler(async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const { googleToken } = req.body;
-    
-    // TODO: Verify Google token and extract user info
-    // This is a placeholder implementation
-    
+    const { idToken, accessToken } = req.body;
+
+    if (!idToken) {
+      throw createError('Google ID token is required', 400);
+    }
+
+    // Verify Google token by calling Google's API
+    const googleResponse = await fetch(`https://www.googleapis.com/oauth2/v3/tokeninfo?id_token=${idToken}`);
+
+    if (!googleResponse.ok) {
+      throw createError('Invalid Google token', 401);
+    }
+
+    const googleUser = await googleResponse.json();
+
+    // Check if token is valid and not expired
+    if (!googleUser.email || !googleUser.email_verified) {
+      throw createError('Invalid Google token or email not verified', 401);
+    }
+
+    // Check if user exists
+    let user = await prisma.user.findUnique({
+      where: { email: googleUser.email },
+      include: {
+        profile: true
+      }
+    });
+
+    if (user) {
+      // Update Google ID if not set
+      if (!user.googleId) {
+        user = await prisma.user.update({
+          where: { id: user.id },
+          data: { googleId: googleUser.sub },
+          include: {
+            profile: true
+          }
+        });
+      }
+    } else {
+      // Create new user
+      user = await prisma.user.create({
+        data: {
+          email: googleUser.email,
+          name: googleUser.name || googleUser.email.split('@')[0],
+          avatar: googleUser.picture,
+          googleId: googleUser.sub,
+          password: null // No password for Google users
+        },
+        include: {
+          profile: true
+        }
+      });
+    }
+
+    // Generate token
+    const token = generateToken(user.id);
+
     res.json({
-      message: 'Google OAuth not implemented yet',
-      error: 'Feature coming soon'
+      message: 'Google login successful',
+      user: {
+        id: user.id,
+        email: user.email,
+        name: user.name,
+        avatar: user.avatar,
+        profile: user.profile
+      },
+      token
     });
   } catch (error) {
     next(error);

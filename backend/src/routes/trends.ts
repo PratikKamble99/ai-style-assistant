@@ -1,9 +1,8 @@
 import express, { Request, Response, NextFunction } from 'express';
-import { PrismaClient } from '@prisma/client';
 import { createError } from '../middleware/errorHandler';
+import { prisma } from '../lib/prisma';
 
 const router = express.Router();
-const prisma = new PrismaClient();
 
 // Get current seasonal trends
 router.get('/', async (req: Request, res: Response, next: NextFunction) => {
@@ -324,7 +323,7 @@ router.post('/:id/generate-outfit', async (req: Request, res: Response, next: Ne
     const suggestion = await prisma.styleSuggestion.create({
       data: suggestionData,
       include: {
-        products: true
+        outfits: true
       }
     });
 

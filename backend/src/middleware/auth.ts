@@ -1,8 +1,6 @@
 import { Request, Response, NextFunction } from 'express';
 import jwt, { SignOptions } from 'jsonwebtoken';
-import { PrismaClient } from '@prisma/client';
-
-const prisma = new PrismaClient();
+import { prisma } from '../lib/prisma';
 
 declare global {
   namespace Express {
@@ -11,6 +9,7 @@ declare global {
         id: string;
         email: string;
       };
+      prisma: any;
     }
   }
 }

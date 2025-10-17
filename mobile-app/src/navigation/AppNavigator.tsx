@@ -11,9 +11,15 @@ import RegisterScreen from '../screens/auth/RegisterScreen';
 // Main Screens
 import HomeScreen from '../screens/main/HomeScreen';
 import ProfileScreen from '../screens/main/ProfileScreen';
-import SuggestionsScreen from '../screens/main/SuggestionsScreen';
+// import SuggestionsScreen from '../screens/main/SuggestionsScreen';
+import AISuggestionsScreen from '../screens/main/AISuggestionsScreen';
 import FavoritesScreen from '../screens/main/FavoritesScreen';
 import CameraScreen from '../screens/main/CameraScreen';
+import CameraTabScreen from '../screens/main/CameraTabScreen';
+import ImagePickerScreen from '../screens/main/ImagePickerScreen';
+import SimpleCameraScreen from '../screens/main/SimpleCameraScreen';
+import SuggestionDetailsScreen from '../screens/main/SuggestionDetailsScreen';
+import ErrorBoundary from '../components/ErrorBoundary';
 
 // Loading
 import LoadingScreen from '../screens/LoadingScreen';
@@ -50,8 +56,8 @@ const TabNavigator = () => {
       })}
     >
       <Tab.Screen name="Home" component={HomeScreen} />
-      <Tab.Screen name="Suggestions" component={SuggestionsScreen} />
-      <Tab.Screen name="Camera" component={CameraScreen} />
+      <Tab.Screen name="Suggestions" component={AISuggestionsScreen} />
+      <Tab.Screen name="Camera" component={CameraTabScreen} />
       <Tab.Screen name="Favorites" component={FavoritesScreen} />
       <Tab.Screen name="Profile" component={ProfileScreen} />
     </Tab.Navigator>
@@ -68,7 +74,46 @@ const AppNavigator = () => {
   return (
     <Stack.Navigator screenOptions={{ headerShown: false }}>
       {user ? (
-        <Stack.Screen name="Main" component={TabNavigator} />
+        <>
+          <Stack.Screen name="Main" component={TabNavigator} />
+          <Stack.Screen 
+            name="CameraModal" 
+            options={{
+              presentation: 'modal',
+              gestureEnabled: true,
+            }}
+          >
+            {(props) => (
+              <ErrorBoundary>
+                <CameraScreen {...props} />
+              </ErrorBoundary>
+            )}
+          </Stack.Screen>
+          <Stack.Screen 
+            name="ImagePickerModal" 
+            component={ImagePickerScreen}
+            options={{
+              presentation: 'modal',
+              gestureEnabled: true,
+            }}
+          />
+          <Stack.Screen 
+            name="SimpleCameraModal" 
+            component={SimpleCameraScreen}
+            options={{
+              presentation: 'modal',
+              gestureEnabled: true,
+            }}
+          />
+          <Stack.Screen 
+            name="SuggestionDetails" 
+            component={SuggestionDetailsScreen}
+            options={{
+              presentation: 'card',
+              gestureEnabled: true,
+            }}
+          />
+        </>
       ) : (
         <>
           <Stack.Screen name="Login" component={LoginScreen} />

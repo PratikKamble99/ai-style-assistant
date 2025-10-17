@@ -5,6 +5,7 @@ import { User, Save, Sparkles, Eye, X } from 'lucide-react'
 import LoadingSpinner from '../components/LoadingSpinner'
 import PhotoUpload from '../components/PhotoUpload'
 import { userService, aiService } from '../services/api'
+import { removeKeyIfNoValue } from '@/utils/helpers'
 
 interface ProfileForm {
   gender: 'MALE' | 'FEMALE' | 'NON_BINARY' | 'PREFER_NOT_TO_SAY'
@@ -13,8 +14,6 @@ interface ProfileForm {
   bodyType?: 'ECTOMORPH' | 'MESOMORPH' | 'ENDOMORPH' | 'PEAR' | 'APPLE' | 'HOURGLASS' | 'RECTANGLE' | 'INVERTED_TRIANGLE'
   faceShape?: 'OVAL' | 'ROUND' | 'SQUARE' | 'HEART' | 'DIAMOND' | 'OBLONG'
   skinTone?: 'VERY_FAIR' | 'FAIR' | 'LIGHT' | 'MEDIUM' | 'OLIVE' | 'TAN' | 'DARK' | 'VERY_DARK'
-  styleType: ('CASUAL' | 'FORMAL' | 'BUSINESS' | 'TRENDY' | 'CLASSIC' | 'BOHEMIAN' | 'MINIMALIST' | 'SPORTY' | 'VINTAGE' | 'EDGY')[]
-  budgetRange: 'BUDGET_FRIENDLY' | 'MID_RANGE' | 'PREMIUM' | 'LUXURY'
 }
 
 interface Photo {
@@ -49,7 +48,6 @@ const ProfilePage = () => {
     formState: { errors }
   } = useForm<ProfileForm>()
 
-  const selectedStyles = watch('styleType') || []
 
   useEffect(() => {
     if (user?.profile) {
@@ -60,8 +58,6 @@ const ProfilePage = () => {
       setValue('bodyType', profile.bodyType)
       setValue('faceShape', profile.faceShape)
       setValue('skinTone', profile.skinTone)
-      setValue('styleType', profile.styleType || [])
-      setValue('budgetRange', profile.budgetRange)
     }
     loadUserPhotos()
   }, [user, setValue])
@@ -80,14 +76,14 @@ const ProfilePage = () => {
   }
 
   // Handle photo upload
-  const handlePhotoUploaded = async (url: string, publicId: string, type: 'FACE' | 'FULL_BODY') => {
+  const handlePhotoUploaded = async (url: string, publicId: string, type: 'FACE' | 'FULL_BODY', id: string) => {
     try {
       // Add photo to backend
-      await userService.addPhoto(url, publicId, type)
+      // await userService.addPhoto(url, publicId, type)
 
       // Add to local state
       const newPhoto: Photo = {
-        id: Date.now().toString(),
+        id,
         url,
         publicId,
         type,
@@ -95,15 +91,15 @@ const ProfilePage = () => {
       }
 
       setPhotos(prev => [...prev, newPhoto])
-      setMessage(`${type === 'FACE' ? 'Face' : 'Body'} photo uploaded successfully!`)
+      setMessage(`${type === 'FACE' ? 'Face' : 'FULL_BODY'} photo uploaded successfully!`)
     } catch (error: any) {
       setMessage(error.response?.data?.message || 'Failed to save photo')
     }
   }
 
   // Handle photo removal
-  const handlePhotoRemoved = (publicId: string) => {
-    setPhotos(prev => prev.filter(p => p.publicId !== publicId))
+  const handlePhotoRemoved = (id: string) => {
+    setPhotos(prev => prev.filter(p => p.id !== id))
     setMessage('Photo removed successfully!')
   }
 
@@ -117,27 +113,26 @@ const ProfilePage = () => {
       return
     }
 
-    if (bodyPhotos.length < 4) {
-      setMessage('Please upload at least 4 full body photos')
-      return
-    }
-
-    // Validate style preferences
-    if (!selectedStyles || selectedStyles.length === 0) {
-      setMessage('Please select at least one style preference')
+    if (bodyPhotos.length < 2) {
+      setMessage('Please upload at least 2 full body photos')
       return
     }
 
     setIsLoading(true)
     setMessage('')
 
+    Object.keys(data).forEach((key)=>{
+      removeKeyIfNoValue(data, key)
+    })
+
+    console.log(data)
+
     try {
-      // For testing, just simulate API call with the form data
-      console.log('Profile data to save:', { ...data, styleType: selectedStyles })
-      await new Promise(resolve => setTimeout(resolve, 1000))
+      // Update profile via API
+      await userService.updateProfile({ ...data, height: Number(data.height), weight: Number(data.weight) })
       setMessage('Profile updated successfully!')
     } catch (error: any) {
-      setMessage('Failed to update profile')
+      setMessage(error.response?.data?.message || 'Failed to update profile')
     } finally {
       setIsLoading(false)
     }
@@ -168,10 +163,12 @@ const ProfilePage = () => {
       setMessage('Analyzing skin tone...')
       await new Promise(resolve => setTimeout(resolve, 500))
 
-      // Call the real API
+      // Call the real API with user height for better accuracy
+      const formData = watch()
       const response = await aiService.analyzePhotos(
         facePhotos.map(p => p.url),
-        bodyPhotos.map(p => p.url)
+        bodyPhotos.map(p => p.url),
+        formData.height
       )
 
       const results = response.data.results
@@ -215,8 +212,8 @@ const ProfilePage = () => {
     if (facePhotos.length === 0) {
       return { canAnalyze: false, message: 'Upload at least 1 face photo' }
     }
-    if (bodyPhotos.length < 4) {
-      return { canAnalyze: false, message: `Upload ${4 - bodyPhotos.length} more body photos` }
+    if (bodyPhotos.length < 2) {
+      return { canAnalyze: false, message: `Upload ${2 - bodyPhotos.length} more body photos` }
     }
 
     // Check required form fields
@@ -228,12 +225,6 @@ const ProfilePage = () => {
     }
     if (!formData.weight || formData.weight < 30) {
       return { canAnalyze: false, message: 'Complete weight field' }
-    }
-    if (!formData.budgetRange) {
-      return { canAnalyze: false, message: 'Complete budget range field' }
-    }
-    if (!selectedStyles || selectedStyles.length === 0) {
-      return { canAnalyze: false, message: 'Select at least one style preference' }
     }
 
     return { canAnalyze: true, message: 'Ready for AI analysis' }
@@ -251,14 +242,6 @@ const ProfilePage = () => {
     { value: 'VINTAGE', label: 'Vintage' },
     { value: 'EDGY', label: 'Edgy' }
   ]
-
-  const toggleStyle = (style: string) => {
-    const currentStyles = selectedStyles || []
-    const newStyles = currentStyles.includes(style as any)
-      ? currentStyles.filter(s => s !== style)
-      : [...currentStyles, style as any]
-    setValue('styleType', newStyles)
-  }
 
   return (
     <div className="max-w-4xl mx-auto space-y-8">
@@ -300,10 +283,10 @@ const ProfilePage = () => {
                 </div>
 
                 <PhotoUpload
-                  photoType="face"
+                  photoType="FACE"
                   maxPhotos={3}
-                  existingPhotos={photos.filter(p => p.type === 'FACE').map(p => ({ url: p.url, publicId: p.publicId }))}
-                  onPhotoUploaded={(url, publicId) => handlePhotoUploaded(url, publicId, 'FACE')}
+                  existingPhotos={photos.filter(p => p.type === 'FACE').map(p => ({ url: p.url, id: p.id }))}
+                  onPhotoUploaded={(url, publicId, id) => handlePhotoUploaded(url, publicId, 'FACE', id)}
                   onPhotoRemoved={handlePhotoRemoved}
                 />
               </div>
@@ -312,33 +295,34 @@ const ProfilePage = () => {
               <div>
                 <div className="flex items-center justify-between mb-3">
                   <label className="block text-sm font-medium text-gray-700">
-                    Full Body Photos (Required: 4 minimum)
+                    Full Body Photos (Required: 2 minimum)
                   </label>
                   <span className="text-xs text-gray-500">
-                    {photos.filter(p => p.type === 'FULL_BODY').length}/4+
+                    {photos.filter(p => p.type === 'FULL_BODY').length}/2+
                   </span>
                 </div>
 
                 <PhotoUpload
-                  photoType="body"
+                  photoType="FULL_BODY"
                   maxPhotos={6}
-                  existingPhotos={photos.filter(p => p.type === 'FULL_BODY').map(p => ({ url: p.url, publicId: p.publicId }))}
-                  onPhotoUploaded={(url, publicId) => handlePhotoUploaded(url, publicId, 'FULL_BODY')}
+                  existingPhotos={photos.filter(p => p.type === 'FULL_BODY').map(p => ({ url: p.url, id: p.id }))}
+                  onPhotoUploaded={(url, publicId, id) => handlePhotoUploaded(url, publicId, 'FULL_BODY', id)}
                   onPhotoRemoved={handlePhotoRemoved}
                 />
               </div>
+
 
               {/* Photo Requirements & Analysis Status */}
               <div className="bg-blue-50 p-3 rounded-lg">
                 <h4 className="text-sm font-medium text-blue-900 mb-1">Photo Requirements:</h4>
                 <ul className="text-xs text-blue-700 space-y-1">
                   <li>• At least 1 clear face photo</li>
-                  <li>• At least 4 full body photos</li>
+                  <li>• At least 2 full body photos</li>
                   <li>• Good lighting and clear visibility</li>
                   <li>• Different angles/outfits preferred</li>
                 </ul>
 
-                {photos.filter(p => p.type === 'FACE').length >= 1 && photos.filter(p => p.type === 'FULL_BODY').length >= 4 && (
+                {photos.filter(p => p.type === 'FACE').length >= 1 && photos.filter(p => p.type === 'FULL_BODY').length >= 2 && (
                   <div className="mt-2 pt-2 border-t border-blue-200">
                     <div className="flex items-center space-x-2">
                       <Sparkles className="w-4 h-4 text-purple-600" />
@@ -586,52 +570,7 @@ const ProfilePage = () => {
                     <option value="VERY_DARK">Very Dark</option>
                   </select>
                 </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Budget Range *
-                  </label>
-                  <select
-                    {...register('budgetRange', { required: 'Budget range is required' })}
-                    className="input w-full"
-                  >
-                    <option value="">Select Budget Range</option>
-                    <option value="BUDGET_FRIENDLY">Budget Friendly (Under ₹2,000)</option>
-                    <option value="MID_RANGE">Mid Range (₹2,000 - ₹8,000)</option>
-                    <option value="PREMIUM">Premium (₹8,000 - ₹20,000)</option>
-                    <option value="LUXURY">Luxury (Above ₹20,000)</option>
-                  </select>
-                  {errors.budgetRange && (
-                    <p className="text-red-500 text-sm mt-1">{errors.budgetRange.message}</p>
-                  )}
-                </div>
               </div>
-
-              {/* Style Preferences */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-4">
-                  Style Preferences (Select at least one) *
-                </label>
-                <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
-                  {styleOptions.map((style) => (
-                    <button
-                      key={style.value}
-                      type="button"
-                      onClick={() => toggleStyle(style.value)}
-                      className={`p-3 rounded-lg border text-sm font-medium transition-colors ${selectedStyles?.includes(style.value as any)
-                        ? 'bg-primary-50 border-primary-200 text-primary-700'
-                        : 'bg-white border-gray-200 text-gray-700 hover:bg-gray-50'
-                        }`}
-                    >
-                      {style.label}
-                    </button>
-                  ))}
-                </div>
-                {selectedStyles.length === 0 && (
-                  <p className="text-red-500 text-sm mt-2">Please select at least one style preference</p>
-                )}
-              </div>
-
               <button
                 type="submit"
                 disabled={isLoading}

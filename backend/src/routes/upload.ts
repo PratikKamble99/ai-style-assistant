@@ -3,10 +3,9 @@ import multer from 'multer';
 import { createError } from '../middleware/errorHandler';
 import { validate, uploadSchemas } from '../middleware/validation';
 import { cloudinaryService } from '../services/cloudinaryService';
-import { PrismaClient } from '@prisma/client';
+import { prisma } from '../lib/prisma';
 
 const router = express.Router();
-const prisma = new PrismaClient();
 
 // Configure multer for memory storage
 const storage = multer.memoryStorage();
@@ -34,10 +33,8 @@ router.post('/image', upload.single('image'), async (req: Request, res: Response
     }
 
     const userId = req.user?.id!;
-    console.log(req.body)
 
-
-    const uplaodResult = await cloudinaryService.uploadBuffer(req.file.buffer);
+    const uploadResult = await cloudinaryService.uploadBuffer(req.file.buffer);
 
     // For face photos, keep only the latest one active
     if (req.body.type === 'FACE') {
@@ -50,21 +47,22 @@ router.post('/image', upload.single('image'), async (req: Request, res: Response
     const result = await prisma.userPhoto.create({
       data: {
         userId,
-        url: uplaodResult.secureUrl,
+        url: uploadResult.secureUrl,
         type: req.body.type,
-        publicId: uplaodResult.publicId,
+        publicId: uploadResult.publicId,
         isActive: true
       }
     });
 
     res.json({
       message: 'Image uploaded successfully',
-      url: uplaodResult.secureUrl,
-      publicId: uplaodResult.publicId,
-      width: uplaodResult.width,
-      height: uplaodResult.height,
-      format: uplaodResult.format,
-      bytes: uplaodResult.bytes
+      url: uploadResult.secureUrl,
+      publicId: uploadResult.publicId,
+      id: result.id,
+      width: uploadResult.width,
+      height: uploadResult.height,
+      format: uploadResult.format,
+      bytes: uploadResult.bytes
     });
 
 
@@ -117,23 +115,35 @@ router.post('/images', upload.array('images', 5), async (req: Request, res: Resp
 });
 
 // Delete image from Cloudinary
-router.delete('/image/:publicId', validate(uploadSchemas.deleteImage), async (req: Request, res: Response, next: NextFunction) => {
+router.delete('/image/:id', validate(uploadSchemas.deleteImage), async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const { publicId } = req.params;
-    const userId = req.user?.id!;
+    const { id } = req.params;
+    const userId = req.user?.id!; 
 
-    // Verify the image belongs to the user (basic security check)
-    if (!publicId.includes(userId)) {
-      throw createError('Unauthorized to delete this image', 403);
+    const photo = await prisma.userPhoto.findFirst({
+      where: {
+        id,
+        userId // Ensure user owns the photo
+      }
+    });
+
+    if (!photo) {
+      throw createError('Image not found or access denied', 404);
     }
-
     // Delete from Cloudinary using our service
-    const success = await cloudinaryService.deleteImage(publicId);
+    const success = await cloudinaryService.deleteImage(photo.publicId);
+
+    // Delete from database regardless of Cloudinary result
+    await prisma.userPhoto.delete({
+      where: {
+        id: photo.id
+      }
+    });
 
     if (success) {
       res.json({ message: 'Image deleted successfully' });
     } else {
-      throw createError('Failed to delete image', 500);
+      res.json({ message: 'Image deleted from database, but Cloudinary deletion failed' });
     }
   } catch (error) {
     next(error);

@@ -8,167 +8,164 @@ datasource db {
 }
 
 model User {
-  id          String   @id @default(cuid())
-  email       String   @unique
-  password    String?
-  name        String
-  avatar      String?
-  googleId    String?  @unique
-  appleId     String?  @unique
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  id        String   @id @default(cuid())
+  email     String   @unique
+  password  String?
+  name      String
+  avatar    String?
+  googleId  String?  @unique
+  appleId   String?  @unique
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Notification preferences
+  notificationPreferences NotificationPreferences?
+  deviceTokens            DeviceToken[]
+  notifications           Notification[]
 
   // Profile data
-  profile     UserProfile?
-  photos      UserPhoto[]
-  preferences UserPreference[]
-  favorites   Favorite[]
-  feedback    Feedback[]
+  profile       UserProfile?
+  photos        UserPhoto[]
+  preferences   UserPreference[]
+  favorites     Favorite[]
+  feedback      Feedback[]
   photoAnalyses PhotoAnalysis[]
+  outfits       Outfit[]
 
   @@map("users")
 }
 
 model UserProfile {
-  id           String    @id @default(cuid())
-  userId       String    @unique
-  user         User      @relation(fields: [userId], references: [id], onDelete: Cascade)
-  
+  id     String @id @default(cuid())
+  userId String @unique
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
   // Physical attributes
-  gender       Gender
-  height       Float?
-  weight       Float?
-  bodyType     BodyType?
-  faceShape    FaceShape?
-  skinTone     SkinTone?
-  
-  // Style preferences
-  styleType    StyleType[]
-  budgetRange  BudgetRange?
-  
-  createdAt    DateTime  @default(now())
-  updatedAt    DateTime  @updatedAt
+  gender    Gender
+  height    Float?
+  weight    Float?
+  bodyType  BodyType?
+  faceShape FaceShape?
+  skinTone  SkinTone?
+
+  // AI-analyzed body measurements (in cm)
+  measurements String? // JSON string containing detailed measurements
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   @@map("user_profiles")
 }
 
 model UserPhoto {
-  id        String    @id @default(cuid())
-  userId    String
-  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
-  
-  url       String
-  type      PhotoType
-  isActive  Boolean   @default(true)
-  publicId  String
-  
-  createdAt DateTime  @default(now())
+  id     String @id @default(cuid())
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  url      String
+  type     PhotoType
+  isActive Boolean   @default(true)
+  publicId String
+
+  createdAt DateTime @default(now())
 
   @@map("user_photos")
 }
 
 model StyleSuggestion {
-  id          String   @id @default(cuid())
-  userId      String
-  
+  id     String @id @default(cuid())
+  userId String
+
   // Suggestion data
-  occasion    Occasion
-  bodyType    BodyType?
-  faceShape   FaceShape?
-  skinTone    SkinTone?
-  
+  occasion  Occasion
+  bodyType  BodyType?
+  faceShape FaceShape?
+  skinTone  SkinTone?
+
   // AI generated content
   outfitDesc  String
   hairstyle   String?
   accessories String?
   skincare    String?
   colors      String[]
-  
-  // Generated images
-  outfitImageUrl String?  // AI generated outfit photo
-  styleImageUrl  String?  // User style reference
-  
+
+  // Trending and popularity
+  isTrending    Boolean @default(false)
+  trendingScore Float?  @default(0)
+  viewCount     Int     @default(0)
+  likeCount     Int     @default(0)
+
+  // Outfits Links
+  outfits    Outfit[]
   // AI confidence score
-  confidence  Float?   @default(0.85)
-  
-  createdAt   DateTime @default(now())
-  
-  // Relations
-  products    ProductRecommendation[]
-  feedback    Feedback[]
+  confidence Float?   @default(0.85)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  feedback Feedback[]
 
   @@map("style_suggestions")
 }
 
-model ProductRecommendation {
-  id               String          @id @default(cuid())
-  suggestionId     String
-  suggestion       StyleSuggestion @relation(fields: [suggestionId], references: [id], onDelete: Cascade)
-  
-  // Product data
-  productId        String
-  name             String
-  brand            String
-  price            Float
-  currency         String          @default("INR")
-  imageUrl         String
-  productUrl       String
-  platform         Platform
-  category         ProductCategory
-  
-  // Metadata
-  rating           Float?
-  reviewCount      Int?
-  inStock          Boolean         @default(true)
-  
-  createdAt        DateTime        @default(now())
-
-  @@map("product_recommendations")
+model Outfit {
+  id           String          @id @default(cuid())
+  name         String
+  category     String
+  price_range  String
+  brand        String
+  google_link  String
+  fit_advice   String
+  styling_tip  String
+  suggestionId String
+  userId       String
+  suggestion   StyleSuggestion @relation(fields: [suggestionId], references: [id], onDelete: Cascade)
+  user         User            @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
 
 model Favorite {
-  id           String          @id @default(cuid())
-  userId       String
-  user         User            @relation(fields: [userId], references: [id], onDelete: Cascade)
-  
-  productId    String
-  name         String
-  brand        String
-  imageUrl     String
-  productUrl   String
-  platform     Platform
-  
-  createdAt    DateTime        @default(now())
+  id     String @id @default(cuid())
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  productId  String
+  name       String
+  brand      String
+  imageUrl   String
+  productUrl String
+  platform   Platform
+
+  createdAt DateTime @default(now())
 
   @@unique([userId, productId, platform])
   @@map("favorites")
 }
 
 model Feedback {
-  id           String          @id @default(cuid())
-  userId       String
-  user         User            @relation(fields: [userId], references: [id], onDelete: Cascade)
-  
+  id     String @id @default(cuid())
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
   suggestionId String?
   suggestion   StyleSuggestion? @relation(fields: [suggestionId], references: [id], onDelete: Cascade)
-  
-  rating       Int             // 1-5 stars
-  liked        Boolean
-  comment      String?
-  
-  createdAt    DateTime        @default(now())
+
+  rating  Int // 1-5 stars
+  liked   Boolean
+  comment String?
+
+  createdAt DateTime @default(now())
 
   @@map("feedback")
 }
 
 model UserPreference {
-  id        String   @id @default(cuid())
-  userId    String
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  
-  key       String   // e.g., "preferred_colors", "avoid_styles"
-  value     String   // JSON string
-  
+  id     String @id @default(cuid())
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  key   String // e.g., "preferred_colors", "avoid_styles"
+  value String // JSON string
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
@@ -177,73 +174,73 @@ model UserPreference {
 }
 
 model SeasonalTrend {
-  id          String   @id @default(cuid())
+  id          String @id @default(cuid())
   title       String
   description String
-  season      String   // e.g., "Winter 2024", "Spring 2024"
-  popularity  Int      // 0-100 percentage
-  
+  season      String // e.g., "Winter 2024", "Spring 2024"
+  popularity  Int // 0-100 percentage
+
   // Visual content
-  imageUrl    String
-  colors      String[] // Hex color codes
-  keyPieces   String[] // Key fashion pieces
-  tags        String[] // Hashtag-style tags
-  
+  imageUrl  String
+  colors    String[] // Hex color codes
+  keyPieces String[] // Key fashion pieces
+  tags      String[] // Hashtag-style tags
+
   // Metadata
-  isActive    Boolean  @default(true)
-  priority    Int      @default(0) // For ordering
-  
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-  
+  isActive Boolean @default(true)
+  priority Int     @default(0) // For ordering
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
   // Relations
-  products    TrendProduct[]
+  products TrendProduct[]
 
   @@map("seasonal_trends")
 }
 
 model TrendProduct {
-  id        String        @id @default(cuid())
-  trendId   String
-  trend     SeasonalTrend @relation(fields: [trendId], references: [id], onDelete: Cascade)
-  
+  id      String        @id @default(cuid())
+  trendId String
+  trend   SeasonalTrend @relation(fields: [trendId], references: [id], onDelete: Cascade)
+
   // Product data
-  productId String
-  name      String
-  brand     String
-  price     Float
+  productId     String
+  name          String
+  brand         String
+  price         Float
   originalPrice Float?
-  currency  String        @default("INR")
-  imageUrl  String
-  productUrl String
-  category  ProductCategory
-  
+  currency      String          @default("INR")
+  imageUrl      String
+  productUrl    String
+  category      ProductCategory
+
   // Metadata
-  rating    Float?
-  inStock   Boolean       @default(true)
-  featured  Boolean       @default(false) // Featured in trend
-  
-  createdAt DateTime      @default(now())
+  rating   Float?
+  inStock  Boolean @default(true)
+  featured Boolean @default(false) // Featured in trend
+
+  createdAt DateTime @default(now())
 
   @@map("trend_products")
 }
 
 model PhotoAnalysis {
-  id         String    @id @default(cuid())
-  userId     String
-  user       User      @relation(fields: [userId], references: [id], onDelete: Cascade)
-  
-  photoUrl   String
+  id     String @id @default(cuid())
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  photoUrl     String
   analysisType AnalysisType
-  
+
   // Results
-  detectedValue String?  // The detected value (e.g., "HOURGLASS", "OVAL")
-  confidence    Float?   // AI confidence score 0-1
-  
+  detectedValue String? // The detected value (e.g., "HOURGLASS", "OVAL")
+  confidence    Float? // AI confidence score 0-1
+
   // Additional data
-  metadata   String?   // JSON string for additional analysis data
-  
-  createdAt  DateTime  @default(now())
+  metadata String? // JSON string for additional analysis data
+
+  createdAt DateTime @default(now())
 
   @@map("photo_analyses")
 }
@@ -301,10 +298,10 @@ enum StyleType {
 }
 
 enum BudgetRange {
-  BUDGET_FRIENDLY     // Under ₹2000
-  MID_RANGE          // ₹2000-₹8000
-  PREMIUM            // ₹8000-₹20000
-  LUXURY             // Above ₹20000
+  BUDGET_FRIENDLY // Under ₹2000
+  MID_RANGE // ₹2000-₹8000
+  PREMIUM // ₹8000-₹20000
+  LUXURY // Above ₹20000
 }
 
 enum PhotoType {
@@ -342,9 +339,184 @@ enum ProductCategory {
   MAKEUP
 }
 
+enum ProductCategoryType {
+  TOP
+  BOTTOM
+  DRESS
+  OUTERWEAR
+  SHOES
+  ACCESSORIES
+  JEWELRY
+  BAG
+}
+
 enum AnalysisType {
   BODY_TYPE
   FACE_SHAPE
   SKIN_TONE
+  BODY_MEASUREMENTS
   FULL_ANALYSIS
+}
+
+// Notification Models
+model NotificationPreferences {
+  id     String @id @default(cuid())
+  userId String @unique
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  // Notification settings
+  trendingOutfits    Boolean @default(true)
+  newSuggestions     Boolean @default(true)
+  weeklyDigest       Boolean @default(true)
+  personalizedTips   Boolean @default(true)
+  seasonalTrends     Boolean @default(true)
+  
+  // Delivery preferences
+  pushNotifications  Boolean @default(true)
+  emailNotifications Boolean @default(true)
+  
+  // Timing preferences
+  preferredTime      String? // HH:MM format, e.g., "09:00"
+  timezone          String? @default("Asia/Kolkata")
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("notification_preferences")
+}
+
+model DeviceToken {
+  id     String @id @default(cuid())
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  token      String   @unique
+  platform   DevicePlatform
+  isActive   Boolean  @default(true)
+  lastUsed   DateTime @default(now())
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("device_tokens")
+}
+
+model Notification {
+  id     String @id @default(cuid())
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  title       String
+  body        String
+  type        NotificationType
+  data        String? // JSON string for additional data
+  imageUrl    String?
+  
+  // Status
+  isRead      Boolean @default(false)
+  isSent      Boolean @default(false)
+  sentAt      DateTime?
+  
+  // Scheduling
+  scheduledFor DateTime?
+  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("notifications")
+}
+
+model TrendingOutfit {
+  id String @id @default(cuid())
+
+  // Outfit details
+  title       String
+  description String
+  imageUrl    String
+  category    String
+  occasion    Occasion
+  season      String // e.g., "Winter 2024"
+  
+  // Trending metrics
+  trendingScore Float   @default(0)
+  viewCount     Int     @default(0)
+  likeCount     Int     @default(0)
+  shareCount    Int     @default(0)
+  
+  // Outfit items
+  items       TrendingOutfitItem[]
+  
+  // Status
+  isActive    Boolean @default(true)
+  isFeatured  Boolean @default(false)
+  
+  // Metadata
+  tags        String[] // Style tags
+  colors      String[] // Color palette
+  priceRange  BudgetRange
+  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("trending_outfits")
+}
+
+model TrendingOutfitItem {
+  id        String        @id @default(cuid())
+  outfitId  String
+  outfit    TrendingOutfit @relation(fields: [outfitId], references: [id], onDelete: Cascade)
+
+  // Item details
+  name        String
+  category    ProductCategoryType
+  brand       String
+  price       Float
+  currency    String @default("INR")
+  imageUrl    String
+  productUrl  String
+  
+  // Styling info
+  description String?
+  fitAdvice   String?
+  stylingTip  String?
+  
+  createdAt DateTime @default(now())
+
+  @@map("trending_outfit_items")
+}
+
+model CronJob {
+  id String @id @default(cuid())
+
+  name        String @unique
+  schedule    String // Cron expression
+  isActive    Boolean @default(true)
+  lastRun     DateTime?
+  nextRun     DateTime?
+  
+  // Execution tracking
+  runCount    Int @default(0)
+  failCount   Int @default(0)
+  lastError   String?
+  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("cron_jobs")
+}
+
+// Additional Enums
+enum DevicePlatform {
+  IOS
+  ANDROID
+  WEB
+}
+
+enum NotificationType {
+  TRENDING_OUTFITS
+  NEW_SUGGESTIONS
+  WEEKLY_DIGEST
+  PERSONALIZED_TIPS
+  SEASONAL_TRENDS
+  SYSTEM_UPDATE
 }

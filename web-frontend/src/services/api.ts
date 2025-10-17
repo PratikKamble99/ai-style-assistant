@@ -45,8 +45,6 @@ export const userService = {
   updateProfile: (profileData: any) =>
     api.put('/user/profile', profileData),
   
-  addPhoto: (url: string, publicId: string, type: string) =>
-    api.post('/user/photos', { url, publicId, type }),
   
   getFavorites: () => api.get('/user/favorites'),
   
@@ -61,8 +59,11 @@ export const aiService = {
   analyzePhoto: (photoUrl: string, analysisType: string) =>
     api.post('/ai/analyze-photo', { photoUrl, analysisType }),
 
-  analyzePhotos: (facePhotos: string[], bodyPhotos: string[]) =>
-    api.post('/ai/analyze-photos', { facePhotos, bodyPhotos }),
+  analyzePhotos: (facePhotos: string[], bodyPhotos: string[], userHeight?: number) =>
+    api.post('/ai/analyze-photos', { facePhotos, bodyPhotos, userHeight }),
+
+  analyzeMeasurements: (bodyPhotos: string[], userHeight?: number, userWeight?: number) =>
+    api.post('/ai/analyze-measurements', { bodyPhotos, userHeight, userWeight }),
   
   getSuggestions: (occasion: string, preferences?: any) =>
     api.post('/ai/suggestions', { occasion, preferences }),
@@ -113,8 +114,9 @@ export const uploadService = {
     })
   },
 
-  deleteImage: (publicId: string) => {
-    return api.delete(`/upload/image/${encodeURIComponent(publicId)}`)
+  deleteImage: (id: string) => {
+    console.log(id, 'ID')
+    return api.delete(`/upload/image/${id}`)
   },
 
   getUploadSignature: (folder?: string) => {
@@ -124,6 +126,37 @@ export const uploadService = {
   transformImage: (publicId: string, transformations?: any[]) => {
     return api.post('/upload/transform', { publicId, transformations })
   },
+}
+
+export const suggestionsService = {
+  // Health check
+  healthCheck: () => api.get('/suggestions/health'),
+  
+  // Generate new suggestion (now uses profile data)
+  generate: (data: {
+    occasion: string;
+    budget?: string;
+    season?: string;
+    searchProducts?: boolean;
+    maxProductsPerCategory?: number;
+  }) => api.post('/suggestions/generate', data),
+  
+  // Get suggestion history
+  getHistory: (page: number = 1, limit: number = 10) =>
+    api.get(`/suggestions/history?page=${page}&limit=${limit}`),
+  
+  // Get suggestion details
+  getDetails: (id: string) => api.get(`/suggestions/${id}`),
+  
+  // Submit feedback
+  submitFeedback: (id: string, data: {
+    rating: number;
+    liked: boolean;
+    comment?: string;
+  }) => api.post(`/suggestions/${id}/feedback`, data),
+  
+  // Get trending suggestions
+  getTrending: () => api.get('/suggestions/trending/popular'),
 }
 
 export const dashboardService = {

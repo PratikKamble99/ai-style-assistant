@@ -3,11 +3,11 @@ import { Camera, Upload, X, Loader2, AlertCircle } from 'lucide-react'
 import { uploadService } from '../services/api'
 
 interface PhotoUploadProps {
-  onPhotoUploaded: (url: string, publicId: string) => void
+  onPhotoUploaded: (url: string, publicId: string, id: string) => void
   onPhotoRemoved?: (publicId: string) => void
-  existingPhotos?: Array<{ url: string; publicId?: string }>
+  existingPhotos?: Array<{ url: string; id: string }>
   maxPhotos?: number
-  photoType: 'face' | 'body'
+  photoType: 'FACE' | 'FULL_BODY'
   className?: string
 }
 
@@ -19,6 +19,9 @@ const PhotoUpload: React.FC<PhotoUploadProps> = ({
   photoType,
   className = ''
 }) => {
+
+  console.log(existingPhotos)
+
   const [isUploading, setIsUploading] = useState(false)
   const [uploadProgress, setUploadProgress] = useState(0)
   const [error, setError] = useState<string | null>(null)
@@ -62,13 +65,17 @@ const PhotoUpload: React.FC<PhotoUploadProps> = ({
         setUploadProgress(prev => Math.min(prev + 10, 90))
       }, 200)
 
+      console.log(photoType)
+
       const response = await uploadService.uploadImage(file, photoType)
       
       clearInterval(progressInterval)
       setUploadProgress(100)
 
       // Call the callback with the uploaded photo URL
-      onPhotoUploaded(response.data.url, response.data.publicId)
+      if (onPhotoUploaded) {
+        onPhotoUploaded(response.data.url, response.data.publicId, response.data.id)
+      }
 
       // Reset state
       setTimeout(() => {
@@ -88,25 +95,20 @@ const PhotoUpload: React.FC<PhotoUploadProps> = ({
     }
   }
 
-  const handleRemovePhoto = async (photo: { url: string; publicId?: string }) => {
+  const handleRemovePhoto = async (photo: { url: string; id: string }) => {
     try {
       console.log(photo)
-      if (photo.publicId && onPhotoRemoved) {
-        await uploadService.deleteImage(photo.publicId)
-        onPhotoRemoved(photo.publicId)
+      if (photo.id && onPhotoRemoved) {
+        console.log(photo)
+        await uploadService.deleteImage(photo.id)
+        onPhotoRemoved(photo.id)
       }
     } catch (error) {
       console.error('Failed to delete photo:', error)
-      // Still remove from UI even if deletion fails
-      if (onPhotoRemoved && photo.publicId) {
-        onPhotoRemoved(photo.publicId)
-      }
     }
   }
 
   const canUploadMore = existingPhotos.length < maxPhotos
-
-  console.log(existingPhotos)
 
   return (
     <div className={`space-y-4 ${className}`}>
@@ -166,13 +168,13 @@ const PhotoUpload: React.FC<PhotoUploadProps> = ({
               </div>
             ) : (
               <div className="space-y-2">
-                {photoType === 'face' ? (
+                {photoType === 'FACE' ? (
                   <Camera className="w-8 h-8 text-gray-400 mx-auto" />
                 ) : (
                   <Upload className="w-8 h-8 text-gray-400 mx-auto" />
                 )}
                 <div className="text-sm font-medium text-gray-700">
-                  Add {photoType === 'face' ? 'Face' : 'Body'} Photo
+                  Add {photoType === 'FACE' ? 'Face' : 'Body'} Photo
                 </div>
                 <div className="text-xs text-gray-500">
                   Click to upload or drag and drop

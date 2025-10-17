@@ -1,10 +1,9 @@
 import express, { Request, Response, NextFunction } from 'express';
-import { PrismaClient } from '@prisma/client';
 import { createError } from '../middleware/errorHandler';
 import { validate, profileSchemas, photoSchemas, favoriteSchemas } from '../middleware/validation';
+import { prisma } from '../lib/prisma';
 
 const router = express.Router();
-const prisma = new PrismaClient();
 
 // Get user profile
 router.get('/profile', async (req: Request, res: Response, next: NextFunction) => {
@@ -34,11 +33,18 @@ router.get('/profile', async (req: Request, res: Response, next: NextFunction) =
 // Update user profile
 router.put('/profile', validate(profileSchemas.update), async (req: Request, res: Response, next: NextFunction) => {
   try {
-
     const userId = req.user?.id!;
-    const profileData = req.body;
+    const { name, ...profileData } = req.body;
 
-    // Upsert profile
+    // Update user name if provided
+    if (name) {
+      await prisma.user.update({
+        where: { id: userId },
+        data: { name }
+      });
+    }
+
+    // Upsert profile (excluding name which goes to user table)
     const profile = await prisma.userProfile.upsert({
       where: { userId },
       update: {
@@ -47,6 +53,7 @@ router.put('/profile', validate(profileSchemas.update), async (req: Request, res
       },
       create: {
         userId,
+        gender: 'PREFER_NOT_TO_SAY',
         ...profileData
       }
     });
@@ -60,43 +67,39 @@ router.put('/profile', validate(profileSchemas.update), async (req: Request, res
   }
 });
 
-// // Add user photo
-// router.post('/photos', async (req: Request, res: Response, next: NextFunction) => {
-//   try {
-//     const { url, type, publicId } = req.body;
-//     const userId = req.user?.id!;
+// Add user photo
+router.post('/photos', validate(photoSchemas.add), async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const { url, type, publicId } = req.body;
+    const userId = req.user?.id!;
 
-//     if (!url || !type) {
-//       throw createError('URL and type are required', 400);
-//     }
+    // For face photos, keep only the latest one active
+    if (type === 'FACE') {
+      await prisma.userPhoto.updateMany({
+        where: { userId, type: 'FACE' },
+        data: { isActive: false }
+      });
+    }
 
-//     // For face photos, keep only the latest one active
-//     if (type === 'FACE') {
-//       await prisma.userPhoto.updateMany({
-//         where: { userId, type: 'FACE' },
-//         data: { isActive: false }
-//       });
-//     }
+    // Add new photo
+    const photo = await prisma.userPhoto.create({
+      data: {
+        userId,
+        url,
+        type,
+        publicId: publicId || '',
+        isActive: true
+      }
+    });
 
-//     // Add new photo
-//     const photo = await prisma.userPhoto.create({
-//       data: {
-//         userId,
-//         url,
-//         type,
-//         publicId,
-//         isActive: true
-//       }
-//     });
-
-//     res.status(201).json({
-//       message: 'Photo added successfully',
-//       photo
-//     });
-//   } catch (error) {
-//     next(error);
-//   }
-// });
+    res.status(201).json({
+      message: 'Photo added successfully',
+      photo
+    });
+  } catch (error) {
+    next(error);
+  }
+});
 
 // Delete user photo
 router.delete('/photos/:id', async (req: Request, res: Response, next: NextFunction) => {

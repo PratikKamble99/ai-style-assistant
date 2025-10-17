@@ -16,7 +16,10 @@
     ],
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.aistylist.mobile"
+      "bundleIdentifier": "com.aistylist.mobile",
+      "infoPlist": {
+        "NSCameraUsageDescription": "This app uses the camera to take photos for AI-powered style analysis and recommendations."
+      }
     },
     "android": {
       "adaptiveIcon": {
@@ -31,16 +34,24 @@
       ]
     },
     "web": {
-      "favicon": "./assets/favicon.png"
+      "favicon": "./assets/favicon.png",
+      "bundler": "metro"
     },
     "plugins": [
+      [
+        "expo-camera",
+        {
+          "cameraPermission": "Allow AI Stylist to access your camera to take photos for style analysis."
+        }
+      ],
       [
         "expo-image-picker",
         {
           "photosPermission": "The app accesses your photos to let you share them with AI for style analysis.",
           "cameraPermission": "The app accesses your camera to let you take photos for style analysis."
         }
-      ]
+      ],
+      "expo-secure-store"
     ]
   }
 }

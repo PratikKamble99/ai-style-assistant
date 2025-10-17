@@ -67,6 +67,12 @@ export const authSchemas = {
       email: commonSchemas.email,
       password: z.string().min(1, 'Password is required')
     })
+  },
+  googleLogin: {
+    body: z.object({
+      idToken: z.string().min(1, 'Google ID token is required'),
+      accessToken: z.string().optional()
+    })
   }
 };
 
@@ -74,14 +80,13 @@ export const authSchemas = {
 export const profileSchemas = {
   update: {
     body: z.object({
+      name: z.string().min(1).max(100).optional(),
       gender: z.enum(['MALE', 'FEMALE', 'NON_BINARY', 'PREFER_NOT_TO_SAY']).optional(),
       height: z.number().min(100).max(250).optional(),
       weight: z.number().min(30).max(300).optional(),
       bodyType: z.enum(['ECTOMORPH', 'MESOMORPH', 'ENDOMORPH', 'PEAR', 'APPLE', 'HOURGLASS', 'RECTANGLE', 'INVERTED_TRIANGLE']).optional(),
       faceShape: z.enum(['OVAL', 'ROUND', 'SQUARE', 'HEART', 'DIAMOND', 'OBLONG']).optional(),
       skinTone: z.enum(['VERY_FAIR', 'FAIR', 'LIGHT', 'MEDIUM', 'OLIVE', 'TAN', 'DARK', 'VERY_DARK']).optional(),
-      styleType: z.array(z.enum(['CASUAL', 'FORMAL', 'BUSINESS', 'TRENDY', 'CLASSIC', 'BOHEMIAN', 'MINIMALIST', 'SPORTY', 'VINTAGE', 'EDGY'])).optional(),
-      budgetRange: z.enum(['BUDGET_FRIENDLY', 'MID_RANGE', 'PREMIUM', 'LUXURY']).optional()
     })
   }
 };
@@ -184,12 +189,12 @@ export const productSchemas = {
 export const favoriteSchemas = {
   add: {
     body: z.object({
-      productId: z.string().min(1, 'Product ID is required').max(100, 'Product ID is too long'),
-      name: z.string().min(1, 'Product name is required').max(200, 'Product name is too long'),
-      brand: z.string().min(1, 'Brand is required').max(100, 'Brand name is too long'),
+      type: z.enum(['PRODUCT', 'SUGGESTION']),
+      itemId: z.string().min(1, 'Item ID is required').max(100, 'Item ID is too long'),
+      title: z.string().min(1, 'Title is required').max(200, 'Title is too long'),
+      description: z.string().min(1, 'Description is required').max(500, 'Description is too long'),
       imageUrl: commonSchemas.url,
-      productUrl: commonSchemas.url,
-      platform: z.enum(['MYNTRA', 'AMAZON', 'HM', 'AJIO', 'NYKAA'])
+      metadata: z.string().optional()
     })
   },
   remove: {
@@ -214,7 +219,7 @@ export const uploadSchemas = {
   },
   deleteImage: {
     params: z.object({
-      publicId: z.string().min(1, 'Public ID is required')
+      id: z.string().min(1, 'ID is required')
     })
   }
 };

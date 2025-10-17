@@ -1,7 +1,6 @@
 import axios from 'axios';
-import { PrismaClient, Platform, ProductCategory, StyleSuggestion } from '@prisma/client';
-
-const prisma = new PrismaClient();
+import { Platform, ProductCategory, StyleSuggestion } from '@prisma/client';
+import { prisma } from '../lib/prisma';
 
 export interface ProductSearchFilters {
   category?: string;
@@ -110,39 +109,9 @@ export class ProductService {
 
   private async searchMyntra(query: string, filters: ProductSearchFilters): Promise<any[]> {
     try {
-      // Mock Myntra API call - replace with actual API
-      const mockProducts = [
-        {
-          productId: 'myntra_001',
-          name: `${query} Casual Shirt`,
-          brand: 'Roadster',
-          price: 1299,
-          currency: 'INR',
-          imageUrl: 'https://assets.myntassets.com/h_1440,q_90,w_1080/v1/assets/images/productimage.jpg',
-          productUrl: 'https://www.myntra.com/shirts/roadster/casual-shirt/1234567',
-          platform: 'MYNTRA' as Platform,
-          category: 'CLOTHING' as ProductCategory,
-          rating: 4.2,
-          reviewCount: 1250,
-          inStock: true
-        },
-        {
-          productId: 'myntra_002',
-          name: `${query} Formal Trousers`,
-          brand: 'Arrow',
-          price: 2499,
-          currency: 'INR',
-          imageUrl: 'https://assets.myntassets.com/h_1440,q_90,w_1080/v1/assets/images/productimage2.jpg',
-          productUrl: 'https://www.myntra.com/trousers/arrow/formal-trousers/2345678',
-          platform: 'MYNTRA' as Platform,
-          category: 'CLOTHING' as ProductCategory,
-          rating: 4.5,
-          reviewCount: 890,
-          inStock: true
-        }
-      ];
-
-      return mockProducts;
+      // TODO: Implement actual Myntra API integration
+      console.log('Myntra API integration not implemented yet');
+      return [];
     } catch (error) {
       console.error('Myntra search error:', error);
       return [];
@@ -151,25 +120,9 @@ export class ProductService {
 
   private async searchAmazon(query: string, filters: ProductSearchFilters): Promise<any[]> {
     try {
-      // Mock Amazon API call - replace with actual Product Advertising API
-      const mockProducts = [
-        {
-          productId: 'amazon_001',
-          name: `${query} Cotton T-Shirt`,
-          brand: 'Amazon Brand - Symbol',
-          price: 599,
-          currency: 'INR',
-          imageUrl: 'https://m.media-amazon.com/images/I/61abc123def.jpg',
-          productUrl: 'https://www.amazon.in/dp/B08ABC123DEF',
-          platform: 'AMAZON' as Platform,
-          category: 'CLOTHING' as ProductCategory,
-          rating: 4.0,
-          reviewCount: 2340,
-          inStock: true
-        }
-      ];
-
-      return mockProducts;
+      // TODO: Implement actual Amazon Product Advertising API integration
+      console.log('Amazon API integration not implemented yet');
+      return [];
     } catch (error) {
       console.error('Amazon search error:', error);
       return [];
@@ -178,25 +131,9 @@ export class ProductService {
 
   private async searchHM(query: string, filters: ProductSearchFilters): Promise<any[]> {
     try {
-      // Mock H&M API call - replace with actual API
-      const mockProducts = [
-        {
-          productId: 'hm_001',
-          name: `${query} Slim Fit Jeans`,
-          brand: 'H&M',
-          price: 1999,
-          currency: 'INR',
-          imageUrl: 'https://lp2.hm.com/hmgoepprod?source=url[file:/product/main]',
-          productUrl: 'https://www2.hm.com/en_in/productpage.0123456789.html',
-          platform: 'HM' as Platform,
-          category: 'CLOTHING' as ProductCategory,
-          rating: 4.3,
-          reviewCount: 567,
-          inStock: true
-        }
-      ];
-
-      return mockProducts;
+      // TODO: Implement actual H&M API integration
+      console.log('H&M API integration not implemented yet');
+      return [];
     } catch (error) {
       console.error('H&M search error:', error);
       return [];
@@ -278,88 +215,25 @@ export class ProductService {
   }
 
   private async getMyntraProductDetails(productId: string): Promise<any> {
-    // Mock implementation - replace with actual Myntra API
-    return {
-      productId,
-      name: 'Detailed Product Name',
-      brand: 'Brand Name',
-      price: 1299,
-      originalPrice: 1999,
-      discount: 35,
-      currency: 'INR',
-      images: [
-        'https://assets.myntassets.com/image1.jpg',
-        'https://assets.myntassets.com/image2.jpg'
-      ],
-      description: 'Detailed product description...',
-      specifications: {
-        material: 'Cotton',
-        fit: 'Regular',
-        color: 'Blue'
-      },
-      sizes: ['S', 'M', 'L', 'XL'],
-      rating: 4.2,
-      reviewCount: 1250,
-      reviews: [],
-      inStock: true,
-      deliveryInfo: 'Free delivery in 2-3 days'
-    };
+    // TODO: Implement actual Myntra API integration
+    throw new Error('Myntra product details API not implemented');
   }
 
   private async getAmazonProductDetails(productId: string): Promise<any> {
-    // Mock implementation - replace with actual Amazon API
-    return {
-      productId,
-      name: 'Amazon Product Name',
-      brand: 'Amazon Brand',
-      price: 599,
-      currency: 'INR',
-      images: ['https://m.media-amazon.com/image1.jpg'],
-      description: 'Amazon product description...',
-      rating: 4.0,
-      reviewCount: 2340,
-      inStock: true
-    };
+    // TODO: Implement actual Amazon Product Advertising API integration
+    throw new Error('Amazon product details API not implemented');
   }
 
   private async getHMProductDetails(productId: string): Promise<any> {
-    // Mock implementation - replace with actual H&M API
-    return {
-      productId,
-      name: 'H&M Product Name',
-      brand: 'H&M',
-      price: 1999,
-      currency: 'INR',
-      images: ['https://lp2.hm.com/image1.jpg'],
-      description: 'H&M product description...',
-      rating: 4.3,
-      reviewCount: 567,
-      inStock: true
-    };
+    // TODO: Implement actual H&M API integration
+    throw new Error('H&M product details API not implemented');
   }
 
   async getTrendingProducts(filters: any): Promise<any[]> {
     try {
-      // Mock trending products - replace with actual analytics data
-      const trendingProducts = [
-        {
-          productId: 'trending_001',
-          name: 'Trending Casual Shirt',
-          brand: 'Popular Brand',
-          price: 1599,
-          currency: 'INR',
-          imageUrl: 'https://example.com/trending1.jpg',
-          productUrl: 'https://example.com/product1',
-          platform: 'MYNTRA' as Platform,
-          category: 'CLOTHING' as ProductCategory,
-          rating: 4.5,
-          reviewCount: 3200,
-          inStock: true,
-          trendScore: 95
-        }
-      ];
-
-      return trendingProducts.slice(0, filters.limit);
+      // TODO: Implement actual trending products analytics
+      console.log('Trending products analytics not implemented yet');
+      return [];
     } catch (error) {
       console.error('Get trending products error:', error);
       return [];
@@ -368,26 +242,9 @@ export class ProductService {
 
   async getSimilarProducts(platform: Platform, productId: string, limit: number): Promise<any[]> {
     try {
-      // Mock similar products - replace with actual recommendation algorithm
-      const similarProducts = [
-        {
-          productId: 'similar_001',
-          name: 'Similar Product 1',
-          brand: 'Similar Brand',
-          price: 1299,
-          currency: 'INR',
-          imageUrl: 'https://example.com/similar1.jpg',
-          productUrl: 'https://example.com/similar1',
-          platform,
-          category: 'CLOTHING' as ProductCategory,
-          rating: 4.2,
-          reviewCount: 890,
-          inStock: true,
-          similarity: 0.85
-        }
-      ];
-
-      return similarProducts.slice(0, limit);
+      // TODO: Implement actual product recommendation algorithm
+      console.log('Product recommendation algorithm not implemented yet');
+      return [];
     } catch (error) {
       console.error('Get similar products error:', error);
       return [];

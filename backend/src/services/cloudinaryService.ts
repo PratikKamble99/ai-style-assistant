@@ -33,15 +33,23 @@ export class CloudinaryService {
    */
   async uploadBuffer(buffer: Buffer, options: UploadOptions = {}): Promise<UploadResult> {
     try {
+      const uploadOptions = {
+        folder: options.folder || 'ai-style',
+        resource_type: options.resourceType || 'auto',
+        // transformation: options.transformation,
+        // quality: options.quality || 'auto',
+        // format: options.format || 'auto'
+      };
 
+      console.log(uploadOptions)
       const result = await new Promise<any>((resolve, reject) => {
         const uploadStream = cloudinary.uploader.upload_stream(
-          {
-            folder: 'ai-style', // optional: specify folder
-            resource_type: 'auto', // auto-detect image/video
-          },
+          uploadOptions,
           (error, result) => {
-            if (error) return reject(error);
+            if (error) {
+              console.error('Cloudinary upload stream error:', error);
+              return reject(error);
+            }
             resolve(result);
           }
         );
@@ -50,19 +58,23 @@ export class CloudinaryService {
         streamifier.createReadStream(buffer).pipe(uploadStream);
       });
 
+      if (!result) {
+        throw new Error('No result from Cloudinary upload');
+      }
+
       return {
         publicId: result.public_id,
         url: result.url,
         secureUrl: result.secure_url,
-        width: result.width,
-        height: result.height,
-        format: result.format,
-        bytes: result.bytes,
+        width: result.width || 0,
+        height: result.height || 0,
+        format: result.format || 'unknown',
+        bytes: result.bytes || 0,
         createdAt: result.created_at
       };
-    } catch (error) {
+    } catch (error: any) {
       console.error('Cloudinary upload error:', error);
-      throw new Error('Failed to upload image to Cloudinary');
+      throw new Error(`Failed to upload image to Cloudinary: ${error.message}`);
     }
   }
 
@@ -79,15 +91,12 @@ export class CloudinaryService {
       //   ...options
       // };
 
-      const uploadOptions= {
+      const uploadOptions = {
         folder: 'ai-style', // Optional: specify a folder in Cloudinary
         use_filename: true,        // Optional: use original filename as public ID
         unique_filename: false,    // Optional: prevent adding random string to filename
-        overwrite: true    
+        overwrite: true
       }
-
-      console.log('------------')
-      console.log(file)
 
       const result = await cloudinary.uploader.upload(file, uploadOptions);
 
@@ -168,7 +177,7 @@ export class CloudinaryService {
   generateUploadSignature(params: any): { signature: string; timestamp: number } {
     const timestamp = Math.round(new Date().getTime() / 1000);
     const paramsWithTimestamp = { ...params, timestamp };
-    
+
     const signature = cloudinary.utils.api_sign_request(
       paramsWithTimestamp,
       process.env.CLOUDINARY_API_SECRET!

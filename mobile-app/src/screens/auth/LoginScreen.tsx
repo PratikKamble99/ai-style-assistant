@@ -31,6 +31,7 @@ const LoginScreen = ({ navigation }: any) => {
     try {
       await login(email, password);
     } catch (error: any) {
+      // console.log(error)
       Alert.alert('Login Failed', error.message);
     } finally {
       setIsLoading(false);

@@ -290,3 +290,16 @@ export const url = {
     window.history.replaceState({}, '', url.toString())
   }
 }
+
+export function removeKeyIfNoValue(obj: Record<string, any>, key: string) {
+  // Check if the key exists and its value is considered "falsy" (e.g., undefined, null, 0, "", false)
+  // If you only want to remove for undefined or null, you can explicitly check for those.
+  if (obj.hasOwnProperty(key) && (!obj[key] || obj[key] === null || obj[key] === undefined)) {
+    delete obj[key];
+    console.log(`Key '${key}' removed.`);
+  } else if (!obj.hasOwnProperty(key)) {
+    console.log(`Key '${key}' does not exist in the object.`);
+  } else {
+    console.log(`Key '${key}' has a truthy value and was not removed.`);
+  }
+}
