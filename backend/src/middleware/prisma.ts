@@ -5,7 +5,7 @@ import { prisma } from '../lib/prisma';
 declare global {
   namespace Express {
     interface Request {
-      prisma: PrismaClient;
+      prisma: any;
     }
   }
 }

@@ -14,6 +14,7 @@ import traceback
 # Import AI services
 from services.body_analyzer import BodyAnalyzer
 from services.face_analyzer import FaceAnalyzer
+from services.improved_face_analyzer import ImprovedFaceAnalyzer
 from services.skin_analyzer import SkinAnalyzer
 
 # Configure logging
@@ -39,6 +40,7 @@ app.add_middleware(
 # Initialize AI analyzers
 body_analyzer = BodyAnalyzer()
 face_analyzer = FaceAnalyzer()
+improved_face_analyzer = ImprovedFaceAnalyzer()
 skin_analyzer = SkinAnalyzer()
 
 # Pydantic models for request/response
@@ -82,7 +84,14 @@ async def health_check():
         "services": {
             "body_analyzer": "ready",
             "face_analyzer": "ready",
+            "improved_face_analyzer": "ready",
             "skin_analyzer": "ready"
+        },
+        "features": {
+            "mediapipe_face_mesh": "enabled",
+            "geometric_analysis": "enabled",
+            "advanced_landmarks": "enabled",
+            "fallback_detection": "enabled"
         }
     }
 
@@ -148,10 +157,49 @@ async def analyze_body_type(request: SingleImageRequest):
 @app.post("/analyze/face-shape", response_model=AnalysisResponse)
 async def analyze_face_shape(request: SingleImageRequest):
     """
-    Face shape detection and analysis
+    Advanced face shape detection and analysis using MediaPipe and geometric analysis
     """
     try:
-        logger.info(f"Starting face shape analysis for image: {request.image_url}")
+        logger.info(f"Starting advanced face shape analysis for image: {request.image_url}")
+        
+        # Try improved analyzer first
+        result = await improved_face_analyzer.detect_face_shape(request.image_url)
+        
+        # If improved analyzer fails, fallback to basic analyzer
+        if result.get('confidence', 0) < 0.6:
+            logger.info("Improved analyzer confidence low, trying basic analyzer as backup")
+            basic_result = await face_analyzer.detect_face_shape(request.image_url)
+            
+            # Use the result with higher confidence
+            if basic_result.get('confidence', 0) > result.get('confidence', 0):
+                result = basic_result
+                result['analysis_method'] = 'basic_fallback'
+        
+        return AnalysisResponse(
+            success=True,
+            face_shape=result.get('face_shape'),
+            confidence=result.get('confidence', 0.75),
+            alternatives=result.get('alternatives'),
+            keypoints=result.get('landmarks'),
+            measurements=result.get('measurements'),
+            analysis_details=result.get('reasoning')
+        )
+        
+    except Exception as e:
+        logger.error(f"Face shape analysis error: {str(e)}")
+        return AnalysisResponse(
+            success=False,
+            confidence=0.0,
+            error=f"Face shape analysis failed: {str(e)}"
+        )
+
+@app.post("/analyze/face-shape-basic", response_model=AnalysisResponse)
+async def analyze_face_shape_basic(request: SingleImageRequest):
+    """
+    Basic face shape detection (fallback method)
+    """
+    try:
+        logger.info(f"Starting basic face shape analysis for image: {request.image_url}")
         
         result = await face_analyzer.detect_face_shape(request.image_url)
         
@@ -165,11 +213,11 @@ async def analyze_face_shape(request: SingleImageRequest):
         )
         
     except Exception as e:
-        logger.error(f"Face shape analysis error: {str(e)}")
+        logger.error(f"Basic face shape analysis error: {str(e)}")
         return AnalysisResponse(
             success=False,
             confidence=0.0,
-            error=f"Face shape analysis failed: {str(e)}"
+            error=f"Basic face shape analysis failed: {str(e)}"
         )
 
 @app.post("/analyze/skin-tone", response_model=AnalysisResponse)

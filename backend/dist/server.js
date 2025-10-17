@@ -22,6 +22,7 @@ const trending_1 = __importDefault(require("./routes/trending"));
 // Import middleware
 const errorHandler_1 = require("./middleware/errorHandler");
 const auth_2 = require("./middleware/auth");
+const prisma_1 = require("./middleware/prisma");
 // Import services
 const cronService_1 = require("./services/cronService");
 dotenv_1.default.config();
@@ -44,6 +45,8 @@ app.use(limiter);
 // Body parsing middleware
 app.use(express_1.default.json({ limit: '10mb' }));
 app.use(express_1.default.urlencoded({ extended: true, limit: '10mb' }));
+// Prisma middleware
+app.use(prisma_1.prismaMiddleware);
 // Health check
 app.get('/health', (_req, res) => {
     res.json({ status: 'OK', timestamp: new Date().toISOString() });

@@ -53,11 +53,17 @@ class TrendingService {
             Make it fashionable and current with 2024 trends.`;
 
             // Use AI to generate outfit concept
-            const aiResponse = await aiService.generateOutfitSuggestion({
+            const aiResponse = await aiService.generateStyleSuggestions({
+              gender: 'FEMALE', // Default for trending
               occasion: occasion as any,
-              style: category,
-              season: currentSeason,
-              budget: 'MID_RANGE',
+              bodyType: 'RECTANGLE', // Default for trending
+              faceShape: 'OVAL', // Default for trending
+              skinTone: 'MEDIUM', // Default for trending
+              preferences: {
+                style: category,
+                season: currentSeason,
+                budget: 'MID_RANGE',
+              }
             });
 
             // Create trending outfit data

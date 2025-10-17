@@ -3,14 +3,23 @@ import admin from 'firebase-admin';
 import nodemailer from 'nodemailer';
 
 // Initialize Firebase Admin (you'll need to set up Firebase project)
-if (!admin.apps.length) {
-  admin.initializeApp({
-    credential: admin.credential.cert({
-      projectId: process.env.FIREBASE_PROJECT_ID,
-      clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
-      privateKey: process.env.FIREBASE_PRIVATE_KEY?.replace(/\\n/g, '\n'),
-    }),
-  });
+let firebaseInitialized = false;
+try {
+  if (!admin.apps.length && process.env.FIREBASE_PROJECT_ID) {
+    admin.initializeApp({
+      credential: admin.credential.cert({
+        projectId: process.env.FIREBASE_PROJECT_ID,
+        clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
+        privateKey: process.env.FIREBASE_PRIVATE_KEY?.replace(/\\n/g, '\n'),
+      }),
+    });
+    firebaseInitialized = true;
+    console.log('✅ Firebase Admin initialized');
+  } else {
+    console.warn('⚠️ Firebase credentials not configured - push notifications disabled');
+  }
+} catch (error) {
+  console.warn('⚠️ Firebase initialization failed - push notifications disabled:', error);
 }
 
 // Email transporter
@@ -66,6 +75,10 @@ class NotificationService {
   // Send push notification to user's devices
   async sendPushNotification(userId: string, payload: PushNotificationPayload) {
     try {
+      if (!firebaseInitialized) {
+        console.warn('⚠️ Firebase not initialized - skipping push notification');
+        return;
+      }
       // Get user's device tokens
       const deviceTokens = await prisma.deviceToken.findMany({
         where: {

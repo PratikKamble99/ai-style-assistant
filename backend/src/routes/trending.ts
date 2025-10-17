@@ -85,7 +85,10 @@ router.get('/:id', async (req, res) => {
 router.post('/:id/like', authenticateToken, async (req, res) => {
   try {
     const outfitId = req.params.id;
-    const userId = req.user.id;
+    const userId = req.user?.id;
+    if (!userId) {
+      return res.status(401).json({ success: false, error: 'User not authenticated' });
+    }
 
     // Check if outfit exists
     const outfit = await req.prisma.trendingOutfit.findUnique({

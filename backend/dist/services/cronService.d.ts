@@ -10,11 +10,21 @@ declare class CronService {
         error?: undefined;
     } | {
         success: boolean;
-        error: any;
+        error: string;
         message?: undefined;
     }>;
     getCronJobStatus(): Promise<{
-        jobs: any;
+        jobs: {
+            name: string;
+            schedule: string;
+            isActive: boolean;
+            lastRun: Date | null;
+            nextRun: Date | null;
+            runCount: number;
+            failCount: number;
+            lastError: string | null;
+            successRate: string;
+        }[];
         activeJobs: string[];
         totalJobs: number;
     }>;
@@ -22,7 +32,7 @@ declare class CronService {
     stopAllCronJobs(): void;
     restartCronJob(jobName: string): Promise<boolean>;
     private cleanupOldNotifications;
-    getNextRunTimes(): {};
+    getNextRunTimes(): Record<string, string>;
 }
 export declare const cronService: CronService;
 export {};

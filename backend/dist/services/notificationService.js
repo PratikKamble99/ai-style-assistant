@@ -4,22 +4,32 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.notificationService = void 0;
-const client_1 = require("@prisma/client");
+const prisma_1 = require("../lib/prisma");
 const firebase_admin_1 = __importDefault(require("firebase-admin"));
 const nodemailer_1 = __importDefault(require("nodemailer"));
-const prisma = new client_1.PrismaClient();
 // Initialize Firebase Admin (you'll need to set up Firebase project)
-if (!firebase_admin_1.default.apps.length) {
-    firebase_admin_1.default.initializeApp({
-        credential: firebase_admin_1.default.credential.cert({
-            projectId: process.env.FIREBASE_PROJECT_ID,
-            clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
-            privateKey: process.env.FIREBASE_PRIVATE_KEY?.replace(/\\n/g, '\n'),
-        }),
-    });
+let firebaseInitialized = false;
+try {
+    if (!firebase_admin_1.default.apps.length && process.env.FIREBASE_PROJECT_ID) {
+        firebase_admin_1.default.initializeApp({
+            credential: firebase_admin_1.default.credential.cert({
+                projectId: process.env.FIREBASE_PROJECT_ID,
+                clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
+                privateKey: process.env.FIREBASE_PRIVATE_KEY?.replace(/\\n/g, '\n'),
+            }),
+        });
+        firebaseInitialized = true;
+        console.log('✅ Firebase Admin initialized');
+    }
+    else {
+        console.warn('⚠️ Firebase credentials not configured - push notifications disabled');
+    }
+}
+catch (error) {
+    console.warn('⚠️ Firebase initialization failed - push notifications disabled:', error);
 }
 // Email transporter
-const emailTransporter = nodemailer_1.default.createTransporter({
+const emailTransporter = nodemailer_1.default.createTransport({
     service: 'gmail',
     auth: {
         user: process.env.EMAIL_USER,
@@ -30,7 +40,7 @@ class NotificationService {
     // Create notification in database
     async createNotification(notificationData) {
         try {
-            const notification = await prisma.notification.create({
+            const notification = await prisma_1.prisma.notification.create({
                 data: {
                     userId: notificationData.userId,
                     title: notificationData.title,
@@ -52,8 +62,12 @@ class NotificationService {
     // Send push notification to user's devices
     async sendPushNotification(userId, payload) {
         try {
+            if (!firebaseInitialized) {
+                console.warn('⚠️ Firebase not initialized - skipping push notification');
+                return;
+            }
             // Get user's device tokens
-            const deviceTokens = await prisma.deviceToken.findMany({
+            const deviceTokens = await prisma_1.prisma.deviceToken.findMany({
                 where: {
                     userId,
                     isActive: true,
@@ -104,7 +118,7 @@ class NotificationService {
     // Send email notification
     async sendEmailNotification(userId, subject, htmlContent) {
         try {
-            const user = await prisma.user.findUnique({
+            const user = await prisma_1.prisma.user.findUnique({
                 where: { id: userId },
                 include: { notificationPreferences: true },
             });
@@ -130,7 +144,7 @@ class NotificationService {
     // Send trending outfits notification
     async sendTrendingOutfitsNotification(userId, trendingOutfits) {
         try {
-            const user = await prisma.user.findUnique({
+            const user = await prisma_1.prisma.user.findUnique({
                 where: { id: userId },
                 include: { notificationPreferences: true },
             });
@@ -167,7 +181,7 @@ class NotificationService {
                 await this.sendEmailNotification(userId, title, emailHtml);
             }
             // Mark as sent
-            await prisma.notification.update({
+            await prisma_1.prisma.notification.update({
                 where: { id: notification.id },
                 data: { isSent: true, sentAt: new Date() },
             });
@@ -181,7 +195,7 @@ class NotificationService {
     // Send bulk notifications to all users
     async sendBulkTrendingNotifications(trendingOutfits) {
         try {
-            const users = await prisma.user.findMany({
+            const users = await prisma_1.prisma.user.findMany({
                 where: {
                     notificationPreferences: {
                         trendingOutfits: true,
@@ -202,7 +216,7 @@ class NotificationService {
     // Register device token
     async registerDeviceToken(userId, token, platform) {
         try {
-            await prisma.deviceToken.upsert({
+            await prisma_1.prisma.deviceToken.upsert({
                 where: { token },
                 update: {
                     userId,
@@ -227,7 +241,7 @@ class NotificationService {
     // Deactivate invalid tokens
     async deactivateTokens(tokens) {
         try {
-            await prisma.deviceToken.updateMany({
+            await prisma_1.prisma.deviceToken.updateMany({
                 where: { token: { in: tokens } },
                 data: { isActive: false },
             });
@@ -240,7 +254,7 @@ class NotificationService {
     // Get user notifications
     async getUserNotifications(userId, limit = 20, offset = 0) {
         try {
-            const notifications = await prisma.notification.findMany({
+            const notifications = await prisma_1.prisma.notification.findMany({
                 where: { userId },
                 orderBy: { createdAt: 'desc' },
                 take: limit,
@@ -256,7 +270,7 @@ class NotificationService {
     // Mark notification as read
     async markAsRead(notificationId, userId) {
         try {
-            await prisma.notification.updateMany({
+            await prisma_1.prisma.notification.updateMany({
                 where: {
                     id: notificationId,
                     userId,

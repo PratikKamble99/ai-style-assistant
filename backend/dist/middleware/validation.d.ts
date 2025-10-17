@@ -92,11 +92,11 @@ export declare const photoSchemas: {
             url: z.ZodEffects<z.ZodString, string, string>;
             type: z.ZodEnum<["FACE", "FULL_BODY", "OUTFIT"]>;
         }, "strip", z.ZodTypeAny, {
-            url: string;
             type: "FACE" | "FULL_BODY" | "OUTFIT";
+            url: string;
         }, {
-            url: string;
             type: "FACE" | "FULL_BODY" | "OUTFIT";
+            url: string;
         }>;
     };
 };

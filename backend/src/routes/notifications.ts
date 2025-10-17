@@ -8,7 +8,10 @@ const router = express.Router();
 // Get user notifications
 router.get('/', authenticateToken, async (req, res) => {
   try {
-    const userId = req.user.id;
+    const userId = req.user?.id;
+    if (!userId) {
+      return res.status(401).json({ success: false, error: 'User not authenticated' });
+    }
     const limit = parseInt(req.query.limit as string) || 20;
     const offset = parseInt(req.query.offset as string) || 0;
 
@@ -30,7 +33,10 @@ router.get('/', authenticateToken, async (req, res) => {
 // Mark notification as read
 router.patch('/:id/read', authenticateToken, async (req, res) => {
   try {
-    const userId = req.user.id;
+    const userId = req.user?.id;
+    if (!userId) {
+      return res.status(401).json({ success: false, error: 'User not authenticated' });
+    }
     const notificationId = req.params.id;
 
     await notificationService.markAsRead(notificationId, userId);
@@ -51,7 +57,10 @@ router.patch('/:id/read', authenticateToken, async (req, res) => {
 // Register device token for push notifications
 router.post('/device-token', authenticateToken, async (req, res) => {
   try {
-    const userId = req.user.id;
+    const userId = req.user?.id;
+    if (!userId) {
+      return res.status(401).json({ success: false, error: 'User not authenticated' });
+    }
     const { token, platform } = req.body;
 
     if (!token || !platform) {
@@ -79,7 +88,10 @@ router.post('/device-token', authenticateToken, async (req, res) => {
 // Update notification preferences
 router.put('/preferences', authenticateToken, async (req, res) => {
   try {
-    const userId = req.user.id;
+    const userId = req.user?.id;
+    if (!userId) {
+      return res.status(401).json({ success: false, error: 'User not authenticated' });
+    }
     const preferences = req.body;
 
     const updatedPreferences = await req.prisma.notificationPreferences.upsert({
@@ -107,7 +119,10 @@ router.put('/preferences', authenticateToken, async (req, res) => {
 // Get notification preferences
 router.get('/preferences', authenticateToken, async (req, res) => {
   try {
-    const userId = req.user.id;
+    const userId = req.user?.id;
+    if (!userId) {
+      return res.status(401).json({ success: false, error: 'User not authenticated' });
+    }
 
     const preferences = await req.prisma.notificationPreferences.findUnique({
       where: { userId },

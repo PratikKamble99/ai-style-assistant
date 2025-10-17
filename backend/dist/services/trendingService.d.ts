@@ -23,10 +23,115 @@ interface TrendingOutfitItemData {
 }
 declare class TrendingService {
     generateTrendingOutfits(): Promise<TrendingOutfitData[]>;
-    saveTrendingOutfits(outfits: TrendingOutfitData[]): Promise<any[]>;
+    saveTrendingOutfits(outfits: TrendingOutfitData[]): Promise<({
+        items: {
+            id: string;
+            name: string;
+            createdAt: Date;
+            category: import(".prisma/client").$Enums.ProductCategoryType;
+            description: string | null;
+            imageUrl: string;
+            brand: string;
+            productUrl: string;
+            price: number;
+            currency: string;
+            fitAdvice: string | null;
+            stylingTip: string | null;
+            outfitId: string;
+        }[];
+    } & {
+        id: string;
+        createdAt: Date;
+        updatedAt: Date;
+        occasion: import(".prisma/client").$Enums.Occasion;
+        category: string;
+        title: string;
+        description: string;
+        imageUrl: string;
+        isActive: boolean;
+        colors: string[];
+        trendingScore: number;
+        viewCount: number;
+        likeCount: number;
+        season: string;
+        shareCount: number;
+        isFeatured: boolean;
+        tags: string[];
+        priceRange: import(".prisma/client").$Enums.BudgetRange;
+    })[]>;
     updateTrendingScores(): Promise<void>;
-    getTrendingOutfits(limit?: number, offset?: number): Promise<any>;
-    getFeaturedOutfits(limit?: number): Promise<any>;
+    getTrendingOutfits(limit?: number, offset?: number): Promise<({
+        items: {
+            id: string;
+            name: string;
+            createdAt: Date;
+            category: import(".prisma/client").$Enums.ProductCategoryType;
+            description: string | null;
+            imageUrl: string;
+            brand: string;
+            productUrl: string;
+            price: number;
+            currency: string;
+            fitAdvice: string | null;
+            stylingTip: string | null;
+            outfitId: string;
+        }[];
+    } & {
+        id: string;
+        createdAt: Date;
+        updatedAt: Date;
+        occasion: import(".prisma/client").$Enums.Occasion;
+        category: string;
+        title: string;
+        description: string;
+        imageUrl: string;
+        isActive: boolean;
+        colors: string[];
+        trendingScore: number;
+        viewCount: number;
+        likeCount: number;
+        season: string;
+        shareCount: number;
+        isFeatured: boolean;
+        tags: string[];
+        priceRange: import(".prisma/client").$Enums.BudgetRange;
+    })[]>;
+    getFeaturedOutfits(limit?: number): Promise<({
+        items: {
+            id: string;
+            name: string;
+            createdAt: Date;
+            category: import(".prisma/client").$Enums.ProductCategoryType;
+            description: string | null;
+            imageUrl: string;
+            brand: string;
+            productUrl: string;
+            price: number;
+            currency: string;
+            fitAdvice: string | null;
+            stylingTip: string | null;
+            outfitId: string;
+        }[];
+    } & {
+        id: string;
+        createdAt: Date;
+        updatedAt: Date;
+        occasion: import(".prisma/client").$Enums.Occasion;
+        category: string;
+        title: string;
+        description: string;
+        imageUrl: string;
+        isActive: boolean;
+        colors: string[];
+        trendingScore: number;
+        viewCount: number;
+        likeCount: number;
+        season: string;
+        shareCount: number;
+        isFeatured: boolean;
+        tags: string[];
+        priceRange: import(".prisma/client").$Enums.BudgetRange;
+    })[]>;
     cleanupOldOutfits(): Promise<void>;
     runTrendingOutfitsCron(): Promise<{
         success: boolean;

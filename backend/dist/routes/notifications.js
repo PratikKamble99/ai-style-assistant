@@ -11,7 +11,10 @@ const router = express_1.default.Router();
 // Get user notifications
 router.get('/', auth_1.authenticateToken, async (req, res) => {
     try {
-        const userId = req.user.id;
+        const userId = req.user?.id;
+        if (!userId) {
+            return res.status(401).json({ success: false, error: 'User not authenticated' });
+        }
         const limit = parseInt(req.query.limit) || 20;
         const offset = parseInt(req.query.offset) || 0;
         const notifications = await notificationService_1.notificationService.getUserNotifications(userId, limit, offset);
@@ -31,7 +34,10 @@ router.get('/', auth_1.authenticateToken, async (req, res) => {
 // Mark notification as read
 router.patch('/:id/read', auth_1.authenticateToken, async (req, res) => {
     try {
-        const userId = req.user.id;
+        const userId = req.user?.id;
+        if (!userId) {
+            return res.status(401).json({ success: false, error: 'User not authenticated' });
+        }
         const notificationId = req.params.id;
         await notificationService_1.notificationService.markAsRead(notificationId, userId);
         res.json({
@@ -50,7 +56,10 @@ router.patch('/:id/read', auth_1.authenticateToken, async (req, res) => {
 // Register device token for push notifications
 router.post('/device-token', auth_1.authenticateToken, async (req, res) => {
     try {
-        const userId = req.user.id;
+        const userId = req.user?.id;
+        if (!userId) {
+            return res.status(401).json({ success: false, error: 'User not authenticated' });
+        }
         const { token, platform } = req.body;
         if (!token || !platform) {
             return res.status(400).json({
@@ -75,7 +84,10 @@ router.post('/device-token', auth_1.authenticateToken, async (req, res) => {
 // Update notification preferences
 router.put('/preferences', auth_1.authenticateToken, async (req, res) => {
     try {
-        const userId = req.user.id;
+        const userId = req.user?.id;
+        if (!userId) {
+            return res.status(401).json({ success: false, error: 'User not authenticated' });
+        }
         const preferences = req.body;
         const updatedPreferences = await req.prisma.notificationPreferences.upsert({
             where: { userId },
@@ -101,7 +113,10 @@ router.put('/preferences', auth_1.authenticateToken, async (req, res) => {
 // Get notification preferences
 router.get('/preferences', auth_1.authenticateToken, async (req, res) => {
     try {
-        const userId = req.user.id;
+        const userId = req.user?.id;
+        if (!userId) {
+            return res.status(401).json({ success: false, error: 'User not authenticated' });
+        }
         const preferences = await req.prisma.notificationPreferences.findUnique({
             where: { userId },
         });

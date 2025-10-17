@@ -1,10 +1,10 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.trendingService = void 0;
-const client_1 = require("@prisma/client");
+const prisma_1 = require("../lib/prisma");
 const aiService_1 = require("./aiService");
 const notificationService_1 = require("./notificationService");
-const prisma = new client_1.PrismaClient();
+const aiService = new aiService_1.AIService();
 class TrendingService {
     // Generate new trending outfits using AI
     async generateTrendingOutfits() {
@@ -24,11 +24,17 @@ class TrendingService {
             Include specific clothing items with brands, prices in INR, and styling tips. 
             Make it fashionable and current with 2024 trends.`;
                         // Use AI to generate outfit concept
-                        const aiResponse = await aiService_1.aiService.generateOutfitSuggestion({
+                        const aiResponse = await aiService.generateStyleSuggestions({
+                            gender: 'FEMALE', // Default for trending
                             occasion: occasion,
-                            style: category,
-                            season: currentSeason,
-                            budget: 'MID_RANGE',
+                            bodyType: 'RECTANGLE', // Default for trending
+                            faceShape: 'OVAL', // Default for trending
+                            skinTone: 'MEDIUM', // Default for trending
+                            preferences: {
+                                style: category,
+                                season: currentSeason,
+                                budget: 'MID_RANGE',
+                            }
                         });
                         // Create trending outfit data
                         const trendingOutfit = {
@@ -64,7 +70,7 @@ class TrendingService {
             console.log(`💾 Saving ${outfits.length} trending outfits to database...`);
             const savedOutfits = [];
             for (const outfit of outfits) {
-                const savedOutfit = await prisma.trendingOutfit.create({
+                const savedOutfit = await prisma_1.prisma.trendingOutfit.create({
                     data: {
                         title: outfit.title,
                         description: outfit.description,
@@ -110,7 +116,7 @@ class TrendingService {
     async updateTrendingScores() {
         try {
             console.log('📊 Updating trending scores...');
-            const outfits = await prisma.trendingOutfit.findMany({
+            const outfits = await prisma_1.prisma.trendingOutfit.findMany({
                 where: { isActive: true },
             });
             for (const outfit of outfits) {
@@ -119,7 +125,7 @@ class TrendingService {
                 const recencyScore = Math.max(0, 100 - (ageInDays * 5)); // Decay over time
                 const interactionScore = (outfit.viewCount * 1) + (outfit.likeCount * 3) + (outfit.shareCount * 5);
                 const trendingScore = (interactionScore + recencyScore) / 2;
-                await prisma.trendingOutfit.update({
+                await prisma_1.prisma.trendingOutfit.update({
                     where: { id: outfit.id },
                     data: { trendingScore },
                 });
@@ -134,7 +140,7 @@ class TrendingService {
     // Get trending outfits
     async getTrendingOutfits(limit = 20, offset = 0) {
         try {
-            const outfits = await prisma.trendingOutfit.findMany({
+            const outfits = await prisma_1.prisma.trendingOutfit.findMany({
                 where: { isActive: true },
                 include: { items: true },
                 orderBy: { trendingScore: 'desc' },
@@ -151,7 +157,7 @@ class TrendingService {
     // Get featured trending outfits
     async getFeaturedOutfits(limit = 5) {
         try {
-            const outfits = await prisma.trendingOutfit.findMany({
+            const outfits = await prisma_1.prisma.trendingOutfit.findMany({
                 where: {
                     isActive: true,
                     isFeatured: true,
@@ -173,7 +179,7 @@ class TrendingService {
             console.log('🧹 Cleaning up old trending outfits...');
             const thirtyDaysAgo = new Date();
             thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
-            const result = await prisma.trendingOutfit.updateMany({
+            const result = await prisma_1.prisma.trendingOutfit.updateMany({
                 where: {
                     createdAt: { lt: thirtyDaysAgo },
                     trendingScore: { lt: 10 }, // Low engagement
@@ -208,7 +214,7 @@ class TrendingService {
         }
         catch (error) {
             console.error('❌ Trending outfits cron job failed:', error);
-            await this.updateCronJobRecord('trending-outfits', false, error.message);
+            await this.updateCronJobRecord('trending-outfits', false, error instanceof Error ? error.message : 'Unknown error');
             throw error;
         }
     }
@@ -292,7 +298,7 @@ class TrendingService {
         try {
             const nextRun = new Date();
             nextRun.setDate(nextRun.getDate() + 2); // Next run in 2 days
-            await prisma.cronJob.upsert({
+            await prisma_1.prisma.cronJob.upsert({
                 where: { name: jobName },
                 update: {
                     lastRun: new Date(),

@@ -6,8 +6,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.cronService = void 0;
 const node_cron_1 = __importDefault(require("node-cron"));
 const trendingService_1 = require("./trendingService");
-const client_1 = require("@prisma/client");
-const prisma = new client_1.PrismaClient();
+const prisma_1 = require("../lib/prisma");
 class CronService {
     constructor() {
         this.jobs = new Map();
@@ -93,13 +92,13 @@ class CronService {
         }
         catch (error) {
             console.error('❌ Manual trending outfits cron failed:', error);
-            return { success: false, error: error.message };
+            return { success: false, error: error instanceof Error ? error.message : 'Unknown error' };
         }
     }
     // Get cron job status
     async getCronJobStatus() {
         try {
-            const cronJobs = await prisma.cronJob.findMany({
+            const cronJobs = await prisma_1.prisma.cronJob.findMany({
                 orderBy: { lastRun: 'desc' },
             });
             const status = {
@@ -168,7 +167,7 @@ class CronService {
         try {
             const thirtyDaysAgo = new Date();
             thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
-            const result = await prisma.notification.deleteMany({
+            const result = await prisma_1.prisma.notification.deleteMany({
                 where: {
                     createdAt: { lt: thirtyDaysAgo },
                     isRead: true,
